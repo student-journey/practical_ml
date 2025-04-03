@@ -2,11 +2,14 @@ version: "3"
 services: 
   app:
     build: ./app/
-    image: event-planner-api:latest 
-    # env_file:
-    # - ./app/.env
-  #   volumes:
-  #     - ./app:/app
+    # image: event-planner-api:latest 
+    env_file:
+    - ./app/.env
+    depends_on:
+      - database
+      - rabbitmq
+    volumes:
+      - ./app:/app
   # web:
   #   build: ./nginx
   #   ports:
@@ -14,3 +17,34 @@ services:
   #     - 443:443
   #   depends_on:
   #     - app
+  web-proxy:
+    image: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    restart: on-failure
+
+  database:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+volumes:
+  pg-data:
+  rabbitmq-data:
